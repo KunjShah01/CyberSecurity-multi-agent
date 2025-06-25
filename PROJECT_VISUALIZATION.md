@@ -1,9 +1,9 @@
-# 🛡️ Security Multi-Agent System - Complete Visualization
+# 🛡️ CyberSecurity Multi-Agent System - Complete Visualization
 
-This document provides comprehensive visualizations of the Security Multi-Agent System architecture, workflows, and data flows.
+This document provides comprehensive visualizations of the CyberSecurity Multi-Agent System architecture, workflows, and data flows.
 
 ## 📋 Table of Contents
-- [🛡️ Security Multi-Agent System - Complete Visualization](#️-security-multi-agent-system---complete-visualization)
+- [🛡️ CyberSecurity Multi-Agent System - Complete Visualization](#️-cybersecurity-multi-agent-system---complete-visualization)
   - [📋 Table of Contents](#-table-of-contents)
   - [1. System Architecture Overview](#1-system-architecture-overview)
   - [2. Agent Workflow](#2-agent-workflow)
