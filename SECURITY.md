@@ -12,7 +12,7 @@ This document provides comprehensive security guidelines, best practices, and ha
 - [📊 Security Monitoring](#-security-monitoring)
 - [🚨 Incident Response](#-incident-response)
 - [✅ Security Checklist](#-security-checklist)
-- [🔧 Hardening Guide](#-hardening-guide)
+- [🔧 Best Practices](#-best-practices)
 
 ---
 
@@ -30,96 +30,26 @@ The Security Multi-Agent System implements multiple layers of security controls 
 
 ### 🏗️ **Security Architecture**
 
-```mermaid
-graph TB
-    subgraph "External Layer"
-        WAF[🛡️ Web Application Firewall]
-        LB[⚖️ Load Balancer/Nginx]
-    end
-    
-    subgraph "Application Layer"
-        API[🚀 FastAPI]
-        DASH[📊 Streamlit]
-        WORKER[⚙️ Workers]
-    end
-    
-    subgraph "Data Layer"
-        DB[(🗄️ PostgreSQL)]
-        REDIS[(📦 Redis)]
-        SECRETS[🔐 Secrets Store]
-    end
-    
-    subgraph "Security Controls"
-        SCAN[🔍 Vulnerability Scanner]
-        LOG[📝 Security Logging]
-        MON[📊 Security Monitoring]
-        BACKUP[💾 Secure Backups]
-    end
-    
-    WAF --> LB
-    LB --> API & DASH
-    API --> WORKER
-    WORKER --> DB & REDIS
-    API --> SECRETS
-    
-    SCAN --> API & DASH & WORKER
-    LOG --> API & DASH & WORKER
-    MON --> API & DASH & WORKER & DB
-    BACKUP --> DB
-```
+The system follows a layered security approach with:
+- **External Layer**: Web Application Firewall and Load Balancer
+- **Application Layer**: FastAPI, Streamlit Dashboard, and Workers
+- **Data Layer**: PostgreSQL Database, Redis Cache, and Secrets Store
+- **Security Controls**: Vulnerability Scanning, Logging, Monitoring, and Backups
 
 ---
 
 ## 🔍 Vulnerability Management
 
-### 🚨 **Automated Vulnerability Scanning**
+### 🚨 **Automated Security Scanning**
 
-#### **Docker Security Scanning**
+#### **Running Security Scans**
 
 ```bash
 # Run comprehensive security scan
 ./security-scan.sh        # Linux/macOS
 security-scan.bat          # Windows
 
-# Scan results location
-ls -la security-scan-results/
-├── security-summary.md           # Comprehensive report
-├── trivy-vulnerabilities.json    # Detailed vulnerabilities
-├── trivy-secrets.json           # Secret scanning results
-├── scout-cves.sarif             # Docker Scout results
-└── grype-report.txt             # Grype vulnerability report
-```
-
-#### **Continuous Vulnerability Monitoring**
-
-```yaml
-# .github/workflows/security-scan.yml
-name: Security Scan
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'security-agents/multi-agent:latest'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
+# Scan results will be generated in security-scan-results/
 ```
 
 #### **Vulnerability Response Process**
@@ -181,47 +111,27 @@ USER security
 
 #### **Security Context**
 
-```yaml
-# docker-compose.yml security configuration
-services:
-  api:
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE  # Only if binding to privileged ports
+```bash
+# Run containers with security restrictions
+docker run --security-opt=no-new-privileges:true \
+           --read-only \
+           --user 1000:1000 \
+           your-image
 ```
 
 ### 🛡️ **Runtime Security**
 
 #### **Resource Limits**
 
-```yaml
-services:
-  api:
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
-```
+Always set resource limits to prevent resource exhaustion:
+- Memory limits: Prevent memory bombs
+- CPU limits: Prevent CPU starvation
+- Process limits: Control fork bombs
 
 #### **Health Checks**
 
 ```dockerfile
-# Comprehensive health check
+# Add comprehensive health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 ```
@@ -234,86 +144,42 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 #### **Docker Networks**
 
-```yaml
-# docker-compose.yml network configuration
-networks:
-  frontend:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.1.0/24
-  backend:
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.20.2.0/24
+```bash
+# Create isolated networks
+docker network create --driver bridge frontend-net
+docker network create --driver bridge --internal backend-net
+
+# Connect services to appropriate networks
+docker run --network frontend-net nginx
+docker run --network backend-net postgres
 ```
 
 #### **Service Communication**
 
-```yaml
-services:
-  nginx:
-    networks:
-      - frontend
-  
-  api:
-    networks:
-      - frontend
-      - backend
-  
-  db:
-    networks:
-      - backend  # No external access
-```
+- **Frontend Network**: Web-facing services (Nginx, Dashboard)
+- **Backend Network**: Internal services (Database, Cache)
+- **No External Access**: Database and cache services are isolated
 
 ### 🛡️ **SSL/TLS Configuration**
 
-#### **Nginx SSL Configuration**
-
-```nginx
-# nginx.conf SSL hardening
-server {
-    listen 443 ssl http2;
-    
-    # SSL Certificate
-    ssl_certificate /etc/ssl/certs/nginx.crt;
-    ssl_certificate_key /etc/ssl/private/nginx.key;
-    
-    # SSL Security
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    
-    # Security Headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options nosniff always;
-    add_header X-Frame-Options DENY always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'" always;
-}
-```
-
-#### **Certificate Management**
+#### **HTTPS Setup**
 
 ```bash
 # Generate self-signed certificate (development)
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout nginx/ssl/nginx.key \
-    -out nginx/ssl/nginx.crt \
+    -keyout nginx.key \
+    -out nginx.crt \
     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-
-# Let's Encrypt (production)
-docker run --rm -v $(pwd)/nginx/ssl:/etc/letsencrypt \
-    certbot/certbot certonly --standalone \
-    -d yourdomain.com \
-    --email your-email@domain.com \
-    --agree-tos
 ```
+
+#### **Security Headers**
+
+Essential security headers to implement:
+- `Strict-Transport-Security`: Force HTTPS
+- `X-Content-Type-Options`: Prevent MIME sniffing
+- `X-Frame-Options`: Prevent clickjacking
+- `X-XSS-Protection`: XSS protection
+- `Content-Security-Policy`: Control resource loading
 
 ---
 
@@ -343,29 +209,7 @@ SESSION_TIMEOUT_HOURS=1
 
 #### **Docker Secrets (Production)**
 
-```yaml
-# docker-compose.yml with Docker secrets
-version: '3.8'
-
-secrets:
-  postgres_password:
-    external: true
-  jwt_secret:
-    external: true
-
-services:
-  db:
-    environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-    secrets:
-      - postgres_password
-  
-  api:
-    environment:
-      JWT_SECRET_FILE: /run/secrets/jwt_secret
-    secrets:
-      - jwt_secret
-```
+For production deployments, use Docker secrets instead of environment variables:
 
 ```bash
 # Create Docker secrets
@@ -375,145 +219,60 @@ echo "your_jwt_secret_key" | docker secret create jwt_secret -
 
 ### 🔄 **Key Rotation**
 
-#### **Automated Key Rotation**
+#### **Regular Key Rotation Schedule**
 
-```python
-# scripts/rotate_keys.py
-import os
-import secrets
-import string
-from datetime import datetime, timedelta
-
-def generate_secure_key(length=32):
-    """Generate cryptographically secure random key"""
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
-def rotate_jwt_secret():
-    """Rotate JWT secret key"""
-    new_secret = generate_secure_key(64)
-    
-    # Update environment file
-    with open('.env', 'r') as f:
-        content = f.read()
-    
-    # Replace old secret
-    import re
-    content = re.sub(r'SECRET_KEY=.*', f'SECRET_KEY={new_secret}', content)
-    
-    with open('.env', 'w') as f:
-        f.write(content)
-    
-    # Log rotation
-    with open('key_rotation.log', 'a') as f:
-        f.write(f"{datetime.now().isoformat()}: JWT secret rotated\n")
-
-if __name__ == "__main__":
-    rotate_jwt_secret()
-```
+- **API Keys**: Monthly rotation
+- **Database Passwords**: Quarterly rotation
+- **JWT Secrets**: Weekly rotation
+- **SSL Certificates**: Annual renewal
 
 ---
 
 ## 📊 Security Monitoring
 
-### 📈 **Security Metrics**
+### 📈 **Security Logging**
 
-#### **Prometheus Security Metrics**
+#### **Application Logging**
 
 ```python
-# Add to application code
-from prometheus_client import Counter, Histogram, Gauge
+import logging
+import json
+from datetime import datetime
 
-# Security-related metrics
-FAILED_LOGIN_ATTEMPTS = Counter('security_failed_logins_total', 'Failed login attempts')
-API_REQUEST_DURATION = Histogram('security_api_request_duration_seconds', 'API request duration')
-ACTIVE_SESSIONS = Gauge('security_active_sessions', 'Number of active user sessions')
-SUSPICIOUS_ACTIVITY = Counter('security_suspicious_activity_total', 'Suspicious activity detected')
+# Configure security logging
+security_logger = logging.getLogger('security')
+security_logger.setLevel(logging.INFO)
 
-# Usage in application
-@app.middleware("http")
-async def security_monitoring(request: Request, call_next):
-    start_time = time.time()
-    
-    response = await call_next(request)
-    
-    # Record metrics
-    duration = time.time() - start_time
-    API_REQUEST_DURATION.observe(duration)
-    
-    # Detect suspicious patterns
-    if response.status_code == 401:
-        FAILED_LOGIN_ATTEMPTS.inc()
-    
-    return response
+# Security event logging
+def log_security_event(event_type, details, severity="INFO"):
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "event_type": event_type,
+        "details": details,
+        "severity": severity
+    }
+    security_logger.info(json.dumps(log_entry))
+
+# Usage examples
+log_security_event("login_attempt", {"user": "admin", "success": False}, "WARNING")
+log_security_event("api_access", {"endpoint": "/scan", "ip": "192.168.1.1"}, "INFO")
 ```
 
-#### **Grafana Security Dashboard**
+### 🚨 **Security Monitoring**
 
-```json
-{
-  "dashboard": {
-    "title": "Security Monitoring",
-    "panels": [
-      {
-        "title": "Failed Login Attempts",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "rate(security_failed_logins_total[5m])"
-          }
-        ]
-      },
-      {
-        "title": "Suspicious Activity",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "security_suspicious_activity_total"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+#### **Key Metrics to Monitor**
 
-### 🚨 **Security Alerting**
+- Failed authentication attempts
+- Unusual API access patterns
+- Resource usage anomalies
+- Container restart events
+- Network connection patterns
 
-#### **Prometheus Alert Rules**
+#### **Alert Thresholds**
 
-```yaml
-# monitoring/security_alerts.yml
-groups:
-  - name: security
-    rules:
-      - alert: HighFailedLoginRate
-        expr: rate(security_failed_logins_total[5m]) > 10
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High rate of failed login attempts"
-          description: "{{ $value }} failed login attempts per second"
-      
-      - alert: SuspiciousActivity
-        expr: increase(security_suspicious_activity_total[10m]) > 50
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Suspicious activity detected"
-          description: "{{ $value }} suspicious events in the last 10 minutes"
-      
-      - alert: ContainerVulnerability
-        expr: container_vulnerability_count{severity="critical"} > 0
-        for: 0m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Critical vulnerability detected in container"
-          description: "Container {{ $labels.container }} has {{ $value }} critical vulnerabilities"
-```
+- **High Priority**: > 10 failed logins per minute
+- **Medium Priority**: > 100 API requests per minute from single IP
+- **Low Priority**: Unusual access times or patterns
 
 ---
 
@@ -524,9 +283,9 @@ groups:
 #### **Phase 1: Detection & Analysis**
 
 1. **Automated Detection**
-   - Monitor security alerts and metrics
-   - Analyze log patterns and anomalies
-   - Vulnerability scan results
+   - Monitor security alerts and logs
+   - Analyze patterns and anomalies
+   - Review vulnerability scan results
 
 2. **Manual Detection**
    - User reports
@@ -554,15 +313,14 @@ docker commit <container_id> forensic_image_$(date +%Y%m%d_%H%M%S)
 #### **Phase 3: Investigation**
 
 ```bash
-# Investigate container compromise
-docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock \
-    security-forensics:latest investigate <container_id>
-
 # Analyze logs for indicators of compromise
 grep -i "error\|fail\|attack\|intrusion" incident_logs_*.log
 
 # Check for file integrity violations
 docker diff <container_id>
+
+# Review system logs
+journalctl -u docker.service --since "1 hour ago"
 ```
 
 #### **Phase 4: Recovery**
@@ -573,11 +331,10 @@ docker diff <container_id>
 # 1. Stop all services
 docker-compose down
 
-# 2. Restore from clean backup
-./deploy.sh restore
-
-# 3. Apply security patches
+# 2. Apply security patches
 docker-compose pull
+
+# 3. Run security scan
 ./security-scan.sh
 
 # 4. Restart with enhanced monitoring
@@ -626,7 +383,7 @@ docker-compose up -d
 ### 🔄 **Ongoing Security Checklist**
 
 #### **Daily**
-- [ ] Review security alerts and metrics
+- [ ] Review security alerts and logs
 - [ ] Check for failed authentication attempts
 - [ ] Monitor resource usage anomalies
 - [ ] Verify backup completion
@@ -651,14 +408,13 @@ docker-compose up -d
 
 ---
 
-## 🔧 Hardening Guide
+## 🔧 Best Practices
 
 ### 🛡️ **System Hardening**
 
-#### **Docker Daemon Security**
+#### **Docker Security**
 
 ```json
-// /etc/docker/daemon.json
 {
   "live-restore": true,
   "userland-proxy": false,
@@ -667,17 +423,14 @@ docker-compose up -d
   "log-opts": {
     "max-size": "10m",
     "max-file": "3"
-  },
-  "storage-driver": "overlay2",
-  "experimental": false,
-  "debug": false
+  }
 }
 ```
 
 #### **Host Security**
 
 ```bash
-# Firewall configuration (Ubuntu/Debian)
+# Basic firewall setup
 ufw enable
 ufw default deny incoming
 ufw default allow outgoing
@@ -688,24 +441,16 @@ ufw allow 443/tcp
 # Disable unnecessary services
 systemctl disable bluetooth
 systemctl disable cups
-systemctl disable avahi-daemon
-
-# Enable automatic security updates
-apt-get install unattended-upgrades
-dpkg-reconfigure unattended-upgrades
 ```
 
-### 🔐 **Application Hardening**
+### 🔐 **Application Security**
 
 #### **FastAPI Security Configuration**
 
 ```python
-# fastapi_app/security.py
-from fastapi import FastAPI, Security, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-import secrets
 
 app = FastAPI()
 
@@ -730,50 +475,14 @@ async def add_security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
-
-# Rate limiting
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-@app.get("/api/scan")
-@limiter.limit("10/minute")
-async def scan_endpoint(request: Request):
-    # API implementation
-    pass
 ```
 
 ### 📊 **Database Security**
 
-#### **PostgreSQL Hardening**
-
-```bash
-# postgresql.conf security settings
-ssl = on
-ssl_cert_file = 'server.crt'
-ssl_key_file = 'server.key'
-ssl_ciphers = 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'
-ssl_prefer_server_ciphers = on
-
-log_statement = 'all'
-log_min_duration_statement = 1000
-log_connections = on
-log_disconnections = on
-log_checkpoints = on
-
-# Connection limits
-max_connections = 100
-superuser_reserved_connections = 3
-```
+#### **PostgreSQL Security**
 
 ```sql
--- Database security configuration
 -- Create dedicated application user
 CREATE USER security_app WITH PASSWORD 'strong_random_password';
 
@@ -782,22 +491,10 @@ GRANT CONNECT ON DATABASE security_agents TO security_app;
 GRANT USAGE ON SCHEMA public TO security_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO security_app;
 
--- Enable row-level security
-ALTER TABLE scan_results ENABLE ROW LEVEL SECURITY;
-CREATE POLICY scan_results_policy ON scan_results
-    FOR ALL TO security_app
-    USING (user_id = current_user_id());
-
--- Audit trail
-CREATE TABLE audit_log (
-    id SERIAL PRIMARY KEY,
-    table_name VARCHAR(50),
-    operation VARCHAR(10),
-    old_values JSONB,
-    new_values JSONB,
-    user_name VARCHAR(50),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Enable logging
+ALTER SYSTEM SET log_statement = 'all';
+ALTER SYSTEM SET log_connections = on;
+ALTER SYSTEM SET log_disconnections = on;
 ```
 
 ---
@@ -813,17 +510,16 @@ CREATE TABLE audit_log (
 
 ### 🛠️ **Security Tools**
 
-- **Vulnerability Scanners**: Trivy, Grype, Docker Scout, Clair
-- **Security Monitoring**: Falco, OSSEC, Wazuh
-- **Network Security**: ModSecurity, Suricata, Zeek
-- **Secrets Management**: HashiCorp Vault, Docker Secrets, AWS Secrets Manager
+- **Vulnerability Scanners**: Trivy, Grype, Docker Scout
+- **Security Monitoring**: Falco, OSSEC
+- **Network Security**: ModSecurity, Suricata
+- **Secrets Management**: HashiCorp Vault, Docker Secrets
 
 ### 📞 **Support**
 
 For security-related questions or to report vulnerabilities:
 - Email: security@yourdomain.com
 - Security Portal: https://security.yourdomain.com
-- Emergency Hotline: +1-XXX-XXX-XXXX
 
 ---
 
