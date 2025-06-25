@@ -18,7 +18,7 @@ Get up and running in under 5 minutes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/security-multi-agent.git
+git clone https://github.com/KunjShah95/security-multi-agent.git
 cd security-multi-agent
 
 # Copy environment template
@@ -103,7 +103,7 @@ The system uses a **multi-agent architecture** with specialized agents:
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/security-multi-agent.git
+git clone https://github.com/KunjShah95/security-multi-agent.git
 cd security-multi-agent
 
 # Configure environment
@@ -121,7 +121,7 @@ docker-compose ps
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/security-multi-agent.git
+git clone https://github.com/KunjShah95/security-multi-agent.git
 cd security-multi-agent
 
 # Create virtual environment
