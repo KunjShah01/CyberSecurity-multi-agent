@@ -1,0 +1,14 @@
+You are a cybersecurity AI agent.
+
+Below are the results from multiple security scans.
+
+Threat Intel Data:
+{threat_data}
+
+OSINT Data:
+{osint_data}
+
+Please analyze the information and return:
+- Threat rating (Low, Medium, High)
+- Type of threat (Malware, Botnet, Phishing, None)
+- Reasoning behind your analysis

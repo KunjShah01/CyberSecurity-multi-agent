@@ -1,0 +1,122 @@
+# Docker Compose override for development environment
+# This file extends docker-compose.yml with development-specific configurations
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: "3.8"
+
+services:
+  # Override API service for development
+  api:
+    build:
+      target: development
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    volumes:
+      # Mount source code for live reloading
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "8000:8000"
+      - "5678:5678" # Python debugger port
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "fastapi_app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
+
+  # Override dashboard for development
+  dashboard:
+    build:
+      target: development
+    environment:
+      - APP_ENV=development
+      - STREAMLIT_SERVER_RUNONTEMPLATESAVE=true
+      - STREAMLIT_BROWSER_GATHERUSAGESTATS=false
+    volumes:
+      - .:/app
+    command:
+      [
+        "python",
+        "-m",
+        "streamlit",
+        "run",
+        "dashboard/app.py",
+        "--server.port=8501",
+        "--server.address=0.0.0.0",
+        "--server.runOnSave=true",
+      ]
+
+  # Development database with persistent volume
+  dev-db:
+    image: postgres:15-alpine
+    container_name: security-agents-dev-db
+    environment:
+      - POSTGRES_DB=security_agents_dev
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - dev_db_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - security-network
+
+  # Development tools container
+  dev-tools:
+    build:
+      context: .
+      target: development
+    container_name: security-agents-dev-tools
+    environment:
+      - APP_ENV=development
+    volumes:
+      - .:/app
+      - dev_cache:/app/.cache
+    networks:
+      - security-network
+    command: ["tail", "-f", "/dev/null"] # Keep container running
+
+  # Jupyter notebook for development and analysis
+  jupyter:
+    build:
+      context: .
+      target: development
+    container_name: security-agents-jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=dev-token
+    volumes:
+      - .:/app
+      - jupyter_data:/home/security/.jupyter
+    ports:
+      - "8888:8888"
+    networks:
+      - security-network
+    command:
+      [
+        "jupyter",
+        "lab",
+        "--ip=0.0.0.0",
+        "--port=8888",
+        "--no-browser",
+        "--allow-root",
+        "--token=dev-token",
+      ]
+
+volumes:
+  dev_db_data:
+    driver: local
+  dev_cache:
+    driver: local
+  jupyter_data:
+    driver: local

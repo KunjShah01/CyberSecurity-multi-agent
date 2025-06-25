@@ -1,0 +1,60 @@
+flowchart TD
+    START[Threat Analysis Complete] --> EVAL{Evaluate Threat Level}
+    
+    EVAL -->|AbuseIPDB Score > 50| HIGH_RISK[High Risk Detected]
+    EVAL -->|VirusTotal Rep < 0| HIGH_RISK
+    EVAL -->|Low Risk| NO_ALERT[No Alert Required]
+    
+    HIGH_RISK --> EMAIL_PREP[Prepare Email Alert]
+    HIGH_RISK --> SLACK_PREP[Prepare Slack Alert]
+    HIGH_RISK --> DISCORD_PREP[Prepare Discord Alert]
+    
+    EMAIL_PREP --> EMAIL_SEND[Send via SMTP<br/>Gmail 465 SSL]
+    SLACK_PREP --> SLACK_SEND[Send via Webhook<br/>POST Request]
+    DISCORD_PREP --> DISCORD_SEND[Send via Webhook<br/>POST Request]
+    
+    EMAIL_SEND --> EMAIL_STATUS{Email Sent?}
+    SLACK_SEND --> SLACK_STATUS{Slack Sent?}
+    DISCORD_SEND --> DISCORD_STATUS{Discord Sent?}
+    
+    EMAIL_STATUS -->|Success| EMAIL_LOG[Log Email Success]
+    EMAIL_STATUS -->|Failure| EMAIL_ERROR[Log Email Error]
+    
+    SLACK_STATUS -->|Success| SLACK_LOG[Log Slack Success]
+    SLACK_STATUS -->|Failure| SLACK_ERROR[Log Slack Error]
+    
+    DISCORD_STATUS -->|Success| DISCORD_LOG[Log Discord Success]
+    DISCORD_STATUS -->|Failure| DISCORD_ERROR[Log Discord Error]
+    
+    EMAIL_LOG --> COMPLETE[Alert Process Complete]
+    EMAIL_ERROR --> COMPLETE
+    SLACK_LOG --> COMPLETE
+    SLACK_ERROR --> COMPLETE
+    DISCORD_LOG --> COMPLETE
+    DISCORD_ERROR --> COMPLETE
+    NO_ALERT --> COMPLETE
+    
+    classDef start fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    classDef decision fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef process fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef success fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#f44336,stroke-width:2px
+    classDef complete fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px
+    
+    class START start
+    class EVAL,EMAIL_STATUS,SLACK_STATUS,DISCORD_STATUS decision
+    class HIGH_RISK,EMAIL_PREP,SLACK_PREP,DISCORD_PREP,EMAIL_SEND,SLACK_SEND,DISCORD_SEND,NO_ALERT process
+    class EMAIL_LOG,SLACK_LOG,DISCORD_LOG success
+    class EMAIL_ERROR,SLACK_ERROR,DISCORD_ERROR error
+    class COMPLETE complete
+    classDef process fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef success fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#f44336,stroke-width:2px
+    classDef complete fill:#f3e5f5,stroke:#9c27b0,stroke-width:3px
+    
+    class START start
+    class EVAL,EMAIL_STATUS,SLACK_STATUS,DISCORD_STATUS decision
+    class HIGH_RISK,EMAIL_PREP,SLACK_PREP,DISCORD_PREP,EMAIL_SEND,SLACK_SEND,DISCORD_SEND,NO_ALERT process
+    class EMAIL_LOG,SLACK_LOG,DISCORD_LOG success
+    class EMAIL_ERROR,SLACK_ERROR,DISCORD_ERROR error
+    class COMPLETE complete
