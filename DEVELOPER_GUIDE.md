@@ -1,6 +1,6 @@
-# 🚀 Security Multi-Agent System: Developer Guide
+# 🚀 CyverSecurity Multi-Agent System: Developer Guide
 
-Welcome to the Security Multi-Agent System Developer Guide! This comprehensive documentation is designed to take you from zero to hero—whether you're a beginner or an experienced developer. You'll learn how to set up, understand, extend, and contribute to the project with best practices and real-world examples.
+Welcome to the CyberSecurity Multi-Agent System Developer Guide! This comprehensive documentation is designed to take you from zero to hero—whether you're a beginner or an experienced developer. You'll learn how to set up, understand, extend, and contribute to the project with best practices and real-world examples.
 
 ---
 
@@ -85,7 +85,7 @@ If you're new to Python, Docker, or open source, don't worry! Follow these steps
 
 ## 1. Introduction
 
-The Security Multi-Agent System is an AI-powered cybersecurity platform that orchestrates multiple specialized agents for threat intelligence, OSINT, AI analysis, and automated incident response. It is designed for extensibility, security, and ease of use.
+The CyberSecurity Multi-Agent System is an AI-powered cybersecurity platform that orchestrates multiple specialized agents for threat intelligence, OSINT, AI analysis, and automated incident response. It is designed for extensibility, security, and ease of use.
 
 **What you can learn here:**
 - How to set up and run the system
@@ -98,7 +98,7 @@ The Security Multi-Agent System is an AI-powered cybersecurity platform that orc
 ## 2. Project Structure
 
 ```
-security-multi-agent/
+cybersecurity-multi-agent/
 ├── agents/                 # All agent implementations
 │   ├── alert_agent/
 │   ├── correlation_agent/
@@ -139,7 +139,7 @@ security-multi-agent/
 ### Setup (Docker Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/security-multi-agent.git
+git clone https://github.com/KunjShah95/security-multi-agent.git
 cd security-multi-agent
 
 # Copy and edit environment variables
@@ -466,7 +466,7 @@ pytest --cov=agents --cov-report=html
 - **Database errors**: Make sure the `database/logs.db` file exists and is writable.
 
 **Still stuck?**
-- Search the [project issues](https://github.com/yourusername/security-multi-agent/issues)
+- Search the [project issues](https://github.com/KunjShah95/security-multi-agent/issues)
 - Ask for help on [Stack Overflow](https://stackoverflow.com/)
 - Reach out to the community or maintainers
 
